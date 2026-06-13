@@ -10,6 +10,10 @@ import com.jogamp.opengl.util.FPSAnimator;
 
 import javax.swing.JFrame;
 import javax.swing.SwingUtilities;
+import javax.swing.JLabel;
+import javax.swing.JPanel;
+import javax.swing.JButton;
+import javax.swing.JOptionPane;
 import java.awt.BorderLayout;
 import java.awt.Dimension;
 import java.awt.event.KeyEvent;
@@ -28,6 +32,11 @@ public class Project implements GLEventListener, KeyListener {
 
     private Camera camera;
     private BoardBox boardBox;
+
+    private boolean lightingEnabled = true;
+    private boolean ambientEnabled = true;
+    private boolean diffuseEnabled = true;
+    private boolean specularEnabled = true;
 
     private float boardRotationX = 0.0f;
     private float boardRotationY = 0.0f;
@@ -61,6 +70,7 @@ public class Project implements GLEventListener, KeyListener {
         frame = new JFrame("Step 1 - UNI-DS black 3D board box");
         frame.setLayout(new BorderLayout());
         frame.add(canvas, BorderLayout.CENTER);
+        frame.add(createControlsPanel(), BorderLayout.SOUTH);
         frame.addWindowListener(new WindowAdapter() {
             @Override
             public void windowClosing(WindowEvent e) {
@@ -78,6 +88,57 @@ public class Project implements GLEventListener, KeyListener {
         animator = new FPSAnimator(canvas, FPS, true);
         animator.start();
         canvas.requestFocusInWindow();
+    }
+
+    private JPanel createControlsPanel() {
+        JPanel panel = new JPanel();
+
+        JButton checkButton = new JButton("Check solution");
+
+        checkButton.addActionListener(e -> {
+            if (boardBox == null) {
+                JOptionPane.showMessageDialog(frame,
+                        "Board is still loading.",
+                        "Check solution",
+                        JOptionPane.INFORMATION_MESSAGE);
+                return;
+            }
+
+            String result = boardBox.checkSolution();
+
+            JOptionPane.showMessageDialog(frame,
+                    result,
+                    "Check solution",
+                    JOptionPane.INFORMATION_MESSAGE);
+
+            canvas.requestFocusInWindow();
+        });
+
+        checkButton.setFocusable(false);
+
+        JLabel label = new JLabel(
+                "<html>"
+                        + "<b>Controls:</b> "
+                        + "Arrow keys = rotate X/Y | "
+                        + "Q/E = rotate Z | "
+                        + "PageUp/PageDown = zoom | "
+                        + "1-5 = Click boards | "
+                        + "6 = MCU | "
+                        + "7 = TFT | "
+                        + "8 = LCD | "
+                        + "A/D = previous/next placement | "
+                        + "Space = place | "
+                        + "R = remove | "
+                        + "L = lighting | "
+                        + "F2/F3/F4 = ambient/diffuse/specular | "
+                        + "Esc = exit"
+                        + "</html>"
+        );
+
+        panel.add(checkButton);
+        panel.add(label);
+
+        return panel;
     }
 
     @Override
@@ -127,18 +188,40 @@ public class Project implements GLEventListener, KeyListener {
     }
 
     private void setupLight(GL2 gl) {
+        if (!lightingEnabled) {
+            gl.glDisable(GL2.GL_LIGHTING);
+            return;
+        }
+
         gl.glEnable(GL2.GL_LIGHTING);
         gl.glEnable(GL2.GL_LIGHT0);
 
-        float[] ambient = {0.25f, 0.25f, 0.25f, 1.0f};
-        float[] diffuse = {0.9f, 0.9f, 0.85f, 1.0f};
-        float[] specular = {0.8f, 0.8f, 0.8f, 1.0f};
-        float[] position = {3.0f, 4.0f, 5.0f, 1.0f};
+        float[] zero = {0.0f, 0.0f, 0.0f, 1.0f};
+
+        float[] ambient = ambientEnabled
+                ? new float[]{0.25f, 0.25f, 0.25f, 1.0f}
+                : zero;
+
+        float[] diffuse = diffuseEnabled
+                ? new float[]{0.9f, 0.9f, 0.85f, 1.0f}
+                : zero;
+
+        float[] specular = specularEnabled
+                ? new float[]{1.0f, 1.0f, 1.0f, 1.0f}
+                : zero;
+
+        float[] position = {4.0f, 6.0f, 5.0f, 1.0f};
 
         gl.glLightfv(GL2.GL_LIGHT0, GL2.GL_AMBIENT, ambient, 0);
         gl.glLightfv(GL2.GL_LIGHT0, GL2.GL_DIFFUSE, diffuse, 0);
         gl.glLightfv(GL2.GL_LIGHT0, GL2.GL_SPECULAR, specular, 0);
         gl.glLightfv(GL2.GL_LIGHT0, GL2.GL_POSITION, position, 0);
+
+        /*
+         * Material specular reflection.
+         */
+        gl.glMaterialfv(GL2.GL_FRONT_AND_BACK, GL2.GL_SPECULAR, specular, 0);
+        gl.glMaterialf(GL2.GL_FRONT_AND_BACK, GL2.GL_SHININESS, 48.0f);
     }
 
     private void drawAxes(GL2 gl) {
@@ -249,6 +332,27 @@ public class Project implements GLEventListener, KeyListener {
 
             case KeyEvent.VK_8:
                 boardBox.selectLcdDisplay();
+                break;
+
+            // Lightning controls.
+            case KeyEvent.VK_L:
+                lightingEnabled = !lightingEnabled;
+                System.out.println("Lighting: " + (lightingEnabled ? "ON" : "OFF"));
+                break;
+
+            case KeyEvent.VK_F2:
+                ambientEnabled = !ambientEnabled;
+                System.out.println("Ambient light: " + (ambientEnabled ? "ON" : "OFF"));
+                break;
+
+            case KeyEvent.VK_F3:
+                diffuseEnabled = !diffuseEnabled;
+                System.out.println("Diffuse light: " + (diffuseEnabled ? "ON" : "OFF"));
+                break;
+
+            case KeyEvent.VK_F4:
+                specularEnabled = !specularEnabled;
+                System.out.println("Specular light: " + (specularEnabled ? "ON" : "OFF"));
                 break;
 
             default:

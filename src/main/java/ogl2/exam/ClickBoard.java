@@ -28,7 +28,7 @@ public class ClickBoard {
     /*
      * The bottom of the legs reaches mikroBUS holes.
      */
-    private static final float LEG_BOTTOM_Y_CM = 0.72f;
+    private static final float LEG_BOTTOM_Y_CM = 0.0f;
 
     /*
      * Small pins visible on TOP of the Click board.

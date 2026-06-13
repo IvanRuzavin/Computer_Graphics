@@ -49,6 +49,18 @@ public class BoardBox {
     private static final float LCD_WIDTH_CM = 8.0f;
     private static final float LCD_DEPTH_CM = 3.6f;
 
+    /*
+     * Target configuration.
+     * These are the correct Click boards for mikroBUS 1-5.
+     */
+    private static final ClickBoardType[] TARGET_CLICK_BOARDS = {
+            ClickBoardType.WIFI_CLICK,
+            ClickBoardType.OLED_CLICK,
+            ClickBoardType.RS232_CLICK,
+            ClickBoardType.THUNDER_CLICK,
+            ClickBoardType.TEMP_CLICK
+    };
+
     private ClickBoardType selectedClickBoardType = ClickBoardType.WIFI_CLICK;
     private final ClickBoardType[] placedClickBoards = new ClickBoardType[5];
     private int activeMikrobusIndex = 0;
@@ -233,13 +245,282 @@ public class BoardBox {
          */
         drawTopLeftBoxes(gl, topY);
         drawMikrobusRow(gl, topY);
-        drawPlacedClickBoards(gl, topY);
-        drawSelectedObjectPreview(gl, topY);
         drawTftHeaderConnector(gl, topY);
         drawLcdHeaderConnector(gl, topY);
         drawMcuCardConnectors(gl, topY);
+
+        /*
+         * Transparent target hints.
+         */
+        drawTargetHints(gl, topY);
+
+        /*
+         * User-placed objects.
+         */
+        drawPlacedClickBoards(gl, topY);
         drawPlacedLargeModules(gl, topY);
+
+        /*
+         * Preview and active marker.
+         */
+        drawSelectedObjectPreview(gl, topY);
         drawActivePlacementSelector(gl, topY + LINE_Y_OFFSET + 0.003f);
+    }
+
+    private void drawTargetHints(GL2 gl, float surfaceY) {
+        boolean lightingWasEnabled = gl.glIsEnabled(GL2.GL_LIGHTING);
+
+        gl.glDisable(GL2.GL_LIGHTING);
+
+        gl.glEnable(GL2.GL_BLEND);
+        gl.glBlendFunc(GL2.GL_SRC_ALPHA, GL2.GL_ONE_MINUS_SRC_ALPHA);
+
+        /*
+         * Do not write transparent hints into depth buffer.
+         * This prevents hints from hiding real objects.
+         */
+        gl.glDepthMask(false);
+
+        drawTargetClickBoardHints(gl, surfaceY);
+        drawTargetMcuHint(gl, surfaceY);
+        drawTargetTftHint(gl, surfaceY);
+        drawTargetLcdHint(gl, surfaceY);
+
+        gl.glDepthMask(true);
+        gl.glDisable(GL2.GL_BLEND);
+
+        if (lightingWasEnabled) {
+            gl.glEnable(GL2.GL_LIGHTING);
+        }
+    }
+
+    private void drawTargetClickBoardHints(GL2 gl, float surfaceY) {
+        for (int i = 0; i < TARGET_CLICK_BOARDS.length; i++) {
+            ClickBoardType targetType = TARGET_CLICK_BOARDS[i];
+
+            float centerX = getMikrobusCenterX(i);
+            float centerZ = getMikrobusCenterZ();
+
+            float guideDepth = getMikrobusGuideDepth();
+
+            float boardDepth = getTargetClickBoardDepth(targetType, guideDepth);
+            float boardCenterZ = (boardDepth - MIKROBUS_DEPTH_CM) / 2.0f;
+
+            /*
+             * Same vertical positioning as ClickBoard.java.
+             */
+            float pcbThicknessCm = 0.12f;
+            float legBottomYcm = -0.05f;
+            float legHeightCm = 0.8f;
+
+            float pcbBottomYcm = legBottomYcm + legHeightCm;
+            float pcbCenterYcm = pcbBottomYcm + pcbThicknessCm / 2.0f;
+
+            gl.glPushMatrix();
+            gl.glTranslatef(sceneX(centerX), surfaceY, cm(centerZ));
+
+            /*
+             * Almost invisible colored Click board hint.
+             */
+            gl.glColor4f(
+                    targetType.getRed(),
+                    targetType.getGreen(),
+                    targetType.getBlue(),
+                    0.22f
+            );
+
+            gl.glPushMatrix();
+            gl.glTranslatef(0.0f, cm(pcbCenterYcm), cm(boardCenterZ));
+
+            Shape.cuboid(gl,
+                    cm(MIKROBUS_WIDTH_CM),
+                    cm(pcbThicknessCm),
+                    cm(boardDepth));
+
+            gl.glPopMatrix();
+
+            gl.glPopMatrix();
+        }
+    }
+
+    private float getTargetClickBoardDepth(ClickBoardType type, float guideDepth) {
+        if (type.getSize() == ClickBoardSize.LONG) {
+            return guideDepth;
+        }
+
+        if (type.getSize() == ClickBoardSize.MEDIUM) {
+            return guideDepth / 2.0f;
+        }
+
+        return MIKROBUS_DEPTH_CM;
+    }
+
+    private void drawTargetMcuHint(GL2 gl, float surfaceY) {
+        gl.glPushMatrix();
+        gl.glTranslatef(sceneX(0.0f), surfaceY, cm(getMcuCenterZ()));
+
+        /*
+         * MCU target hint:
+         * transparent grey card + transparent white legs.
+         */
+
+        float cardSizeCm = MCU_SOCKET_SIZE_CM;
+        float cardHeightCm = 0.2f; // 2 mm
+
+        float legWidthCm = MCU_CONNECTOR_WIDTH_CM;
+        float legDepthCm = MCU_CONNECTOR_DEPTH_CM;
+        float legHeightCm = MCU_CONNECTOR_HEIGHT_CM;
+
+        float leftLegX =
+                -MCU_SOCKET_SIZE_CM / 2.0f
+                        + MCU_CONNECTOR_SIDE_OFFSET_CM
+                        + MCU_CONNECTOR_WIDTH_CM / 2.0f;
+
+        float rightLegX =
+                MCU_SOCKET_SIZE_CM / 2.0f
+                        - MCU_CONNECTOR_SIDE_OFFSET_CM
+                        - MCU_CONNECTOR_WIDTH_CM / 2.0f;
+
+        /*
+         * Transparent white legs.
+         */
+        gl.glColor4f(0.95f, 0.95f, 0.95f, 0.28f);
+
+        gl.glPushMatrix();
+        gl.glTranslatef(cm(leftLegX), cm(legHeightCm / 2.0f), 0.0f);
+        Shape.cuboid(gl,
+                cm(legWidthCm),
+                cm(legHeightCm),
+                cm(legDepthCm));
+        gl.glPopMatrix();
+
+        gl.glPushMatrix();
+        gl.glTranslatef(cm(rightLegX), cm(legHeightCm / 2.0f), 0.0f);
+        Shape.cuboid(gl,
+                cm(legWidthCm),
+                cm(legHeightCm),
+                cm(legDepthCm));
+        gl.glPopMatrix();
+
+        /*
+         * Transparent MCU card body.
+         */
+        gl.glColor4f(0.55f, 0.55f, 0.60f, 0.32f);
+
+        gl.glPushMatrix();
+        gl.glTranslatef(0.0f,
+                cm(legHeightCm + cardHeightCm / 2.0f),
+                0.0f);
+
+        Shape.cuboid(gl,
+                cm(cardSizeCm),
+                cm(cardHeightCm),
+                cm(cardSizeCm));
+
+        gl.glPopMatrix();
+
+        /*
+         * Thin visible outline so the hint is easy to notice.
+         */
+        gl.glColor4f(0.8f, 0.8f, 0.85f, 0.55f);
+        gl.glLineWidth(1.5f);
+
+        gl.glPushMatrix();
+        gl.glTranslatef(0.0f,
+                cm(legHeightCm + cardHeightCm / 2.0f),
+                0.0f);
+
+        Shape.wireCuboid(gl,
+                cm(cardSizeCm),
+                cm(cardHeightCm + 0.02f),
+                cm(cardSizeCm));
+
+        gl.glPopMatrix();
+
+        gl.glLineWidth(1.0f);
+
+        gl.glPopMatrix();
+    }
+
+    private void drawTargetTftHint(GL2 gl, float surfaceY) {
+        gl.glPushMatrix();
+        gl.glTranslatef(sceneX(getTftCenterX()), surfaceY, cm(getTftCenterZ()));
+
+        /*
+         * TFT target ghost.
+         */
+        gl.glColor4f(0.0f, 0.35f, 0.85f, 0.18f);
+
+        gl.glPushMatrix();
+        gl.glTranslatef(0.0f, cm(0.85f), 0.0f);
+
+        Shape.cuboid(gl,
+                cm(TFT_WIDTH_CM),
+                cm(1.0f),
+                cm(TFT_DEPTH_CM));
+
+        gl.glPopMatrix();
+
+        gl.glPopMatrix();
+    }
+
+    private void drawTargetLcdHint(GL2 gl, float surfaceY) {
+        gl.glPushMatrix();
+        gl.glTranslatef(sceneX(getLcdCenterX()), surfaceY, cm(getLcdCenterZ()));
+
+        /*
+         * LCD target ghost.
+         */
+        gl.glColor4f(0.4f, 0.55f, 1.0f, 0.18f);
+
+        gl.glPushMatrix();
+        gl.glTranslatef(0.0f, cm(1.1f), 0.0f);
+
+        Shape.cuboid(gl,
+                cm(LCD_WIDTH_CM),
+                cm(1.5f),
+                cm(LCD_DEPTH_CM));
+
+        gl.glPopMatrix();
+
+        gl.glPopMatrix();
+    }
+
+    public String checkSolution() {
+        int score = 0;
+        int total = 8;
+
+        /*
+         * Check mikroBUS Click boards.
+         */
+        for (int i = 0; i < TARGET_CLICK_BOARDS.length; i++) {
+            if (placedClickBoards[i] == TARGET_CLICK_BOARDS[i]) {
+                score++;
+            }
+        }
+
+        /*
+         * Check MCU/TFT/LCD.
+         */
+        if (mcuCardPlaced) {
+            score++;
+        }
+
+        if (tftDisplayPlaced) {
+            score++;
+        }
+
+        if (lcdDisplayPlaced) {
+            score++;
+        }
+
+        if (score == total) {
+            return "SUCCESS! All modules are placed correctly. Score: "
+                    + score + "/" + total;
+        }
+
+        return "Current score: " + score + "/" + total
+                + ". Some modules are missing or placed incorrectly.";
     }
 
     private void drawActivePlacementSelector(GL2 gl, float lineY) {
