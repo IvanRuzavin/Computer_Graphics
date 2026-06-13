@@ -167,6 +167,87 @@ public class BoardBox {
     private static final float MCU_CONTACT_GAP_CM = 0.1f;             // 1 mm between contacts
 
     /*
+     * Lower-left button area redesign
+     */
+    private static final int BUTTON_STRIP_COUNT = 4;
+    private static final float BUTTON_STRIP_WIDTH_CM = 10.9f;
+    private static final float BUTTON_STRIP_DEPTH_CM = 1.9f;
+    private static final float BUTTON_STRIP_GAP_CM = 0.1f;
+    private static final float BUTTON_STRIP_HEIGHT_CM = 0.08f;
+    private static final float BUTTON_STRIP_RADIUS_CM = 0.18f;
+
+    /*
+     * Buttons on each strip
+     */
+    private static final int STRIP_BUTTON_COUNT = 8;
+    private static final float STRIP_BUTTON_SIZE_CM = 0.5f;      // 5 mm
+    private static final float STRIP_BUTTON_HEIGHT_CM = 0.2f;    // 2 mm
+    private static final float STRIP_BUTTON_GAP_CM = 0.2f;       // 2 mm
+    private static final float STRIP_BUTTON_RIGHT_OFFSET_CM = 0.5f; // 5 mm from right line
+    private static final float STRIP_BUTTON_ROW_BOTTOM_OFFSET_CM = 0.3f;
+
+    private static final float STRIP_BUTTON_CAP_SIZE_CM = 0.34f;
+    private static final float STRIP_BUTTON_CAP_HEIGHT_CM = 0.1f; // 1 mm
+
+    /*
+     * Red LEDs above buttons
+     */
+    private static final float STRIP_LED_SIZE_CM = 0.2f;         // 2 mm
+    private static final float STRIP_LED_HEIGHT_CM = 0.1f;       // 1 mm
+    private static final float STRIP_LED_ROW_TOP_OFFSET_CM = 0.25f;
+
+    /*
+     * Small rectangular box to the left of the buttons
+     */
+    private static final float STRIP_SMALL_BOX_WIDTH_CM = 2.0f;
+    private static final float STRIP_SMALL_BOX_DEPTH_CM = 0.6f;
+    private static final float STRIP_SMALL_BOX_HEIGHT_CM = 0.3f;
+    private static final float STRIP_SMALL_BOX_GAP_FROM_LEFT_BUTTON_CM = 0.2f;
+
+    /*
+     * Left-side 2x5 vertical pin header
+     * Same style as LCD pins.
+     */
+    private static final int STRIP_HEADER_ROWS = 5;
+    private static final int STRIP_HEADER_COLS = 2;
+    private static final float STRIP_HEADER_BASE_SIZE_CM = 0.2f;
+    private static final float STRIP_HEADER_BASE_HEIGHT_CM = 0.3f;
+    private static final float STRIP_HEADER_PIN_SIZE_CM = 0.1f;
+    private static final float STRIP_HEADER_PIN_HEIGHT_CM = 0.8f;
+    private static final float STRIP_HEADER_PIN_GAP_CM = 0.1f;
+
+    /*
+     * Lower-right pin header area redesign.
+     */
+    private static final int PIN_SECTION_ROWS = 4;
+    private static final int PIN_SECTION_COLS = 4;
+    private static final float PIN_SECTION_RECT_WIDTH_CM = 2.5f;
+    private static final float PIN_SECTION_RECT_DEPTH_CM = 1.9f;
+    private static final float PIN_SECTION_RECT_GAP_CM = 0.1f;
+    private static final float PIN_SECTION_RECT_RADIUS_CM = 0.18f;
+
+    /*
+     * 2 columns x 5 pins header inside each lower-right rectangle.
+     */
+    private static final int PIN_SECTION_HEADER_ROWS = 5;
+    private static final int PIN_SECTION_HEADER_COLS = 2;
+    private static final float PIN_SECTION_HEADER_TOP_OFFSET_CM = 0.15f;
+    private static final float PIN_SECTION_HEADER_BASE_SIZE_CM = 0.2f;
+    private static final float PIN_SECTION_HEADER_BASE_HEIGHT_CM = 0.3f;
+    private static final float PIN_SECTION_HEADER_PIN_SIZE_CM = 0.1f;
+    private static final float PIN_SECTION_HEADER_PIN_HEIGHT_CM = 0.8f;
+    private static final float PIN_SECTION_HEADER_PIN_GAP_CM = 0.1f;
+
+    /*
+     * 8 red LEDs inside each lower-right rectangle.
+     */
+    private static final int PIN_SECTION_LED_COUNT = 8;
+    private static final float PIN_SECTION_LED_SIZE_CM = 0.2f;
+    private static final float PIN_SECTION_LED_HEIGHT_CM = 0.1f;
+    private static final float PIN_SECTION_LED_GAP_CM = 0.1f;
+    private static final float PIN_SECTION_LED_BOTTOM_OFFSET_CM = 0.15f;
+
+    /*
      * Scale:
      * 1 OpenGL unit = 10 centimeters.
      */
@@ -240,6 +321,9 @@ public class BoardBox {
         drawTopMarkings(gl, topY + LINE_Y_OFFSET);
         drawMikrobusGuideLines(gl, topY + LINE_Y_OFFSET);
 
+        drawButtonSection(gl, topY);
+        drawPinHeaderSection(gl, topY);
+
         /*
          * 3D objects on the top.
          */
@@ -265,6 +349,458 @@ public class BoardBox {
          */
         drawSelectedObjectPreview(gl, topY);
         drawActivePlacementSelector(gl, topY + LINE_Y_OFFSET + 0.003f);
+    }
+
+    private void drawPinHeaderSection(GL2 gl, float surfaceY) {
+        float yellowRight = YELLOW_PERIMETER_WIDTH_CM / 2.0f;
+        float yellowBottom = -YELLOW_PERIMETER_DEPTH_CM / 2.0f;
+
+        /*
+         * Use the old lower-right pin-header area as the placement zone.
+         */
+        float areaLeft = yellowRight - OFFSET_2MM_CM - PIN_RECT_WIDTH_CM;
+        float areaBottom = yellowBottom + OFFSET_2MM_CM;
+
+        float gridWidth = PIN_SECTION_COLS * PIN_SECTION_RECT_WIDTH_CM
+                + (PIN_SECTION_COLS - 1) * PIN_SECTION_RECT_GAP_CM;
+
+        float gridDepth = PIN_SECTION_ROWS * PIN_SECTION_RECT_DEPTH_CM
+                + (PIN_SECTION_ROWS - 1) * PIN_SECTION_RECT_GAP_CM;
+
+        float startLeft = areaLeft + (PIN_RECT_WIDTH_CM - gridWidth) / 2.0f;
+        float startBottom = areaBottom + (PIN_RECT_DEPTH_CM - gridDepth) / 2.0f;
+
+        for (int row = 0; row < PIN_SECTION_ROWS; row++) {
+            float rectBottom = startBottom + row * (PIN_SECTION_RECT_DEPTH_CM + PIN_SECTION_RECT_GAP_CM);
+            float rectCenterZ = rectBottom + PIN_SECTION_RECT_DEPTH_CM / 2.0f;
+
+            for (int col = 0; col < PIN_SECTION_COLS; col++) {
+                float rectLeft = startLeft + col * (PIN_SECTION_RECT_WIDTH_CM + PIN_SECTION_RECT_GAP_CM);
+                float rectCenterX = rectLeft + PIN_SECTION_RECT_WIDTH_CM / 2.0f;
+
+                drawSinglePinHeaderRectangle(gl, surfaceY, rectCenterX, rectCenterZ);
+            }
+        }
+    }
+
+    private void drawSinglePinHeaderRectangle(GL2 gl,
+                                              float surfaceY,
+                                              float rectCenterXcm,
+                                              float rectCenterZcm) {
+        float rectTop = rectCenterZcm + PIN_SECTION_RECT_DEPTH_CM / 2.0f;
+        float rectBottom = rectCenterZcm - PIN_SECTION_RECT_DEPTH_CM / 2.0f;
+
+        /*
+         * Thin white rounded rectangle marking on the black board surface.
+         */
+        boolean lightingWasEnabled = gl.glIsEnabled(GL2.GL_LIGHTING);
+
+        gl.glDisable(GL2.GL_LIGHTING);
+        gl.glColor3f(1.0f, 1.0f, 1.0f);
+        gl.glLineWidth(1.3f);
+
+        drawRoundedLine(gl,
+                rectCenterXcm,
+                rectCenterZcm,
+                PIN_SECTION_RECT_WIDTH_CM,
+                PIN_SECTION_RECT_DEPTH_CM,
+                cm(PIN_SECTION_RECT_RADIUS_CM),
+                surfaceY + LINE_Y_OFFSET + 0.002f);
+
+        gl.glLineWidth(1.0f);
+
+        if (lightingWasEnabled) {
+            gl.glEnable(GL2.GL_LIGHTING);
+        }
+
+        /*
+         * 2 columns x 5 pins header in the middle-top position.
+         */
+        float headerDepth = PIN_SECTION_HEADER_ROWS * PIN_SECTION_HEADER_BASE_SIZE_CM
+                + (PIN_SECTION_HEADER_ROWS - 1) * PIN_SECTION_HEADER_PIN_GAP_CM;
+
+        float headerCenterZ = rectTop
+                - PIN_SECTION_HEADER_TOP_OFFSET_CM
+                - headerDepth / 2.0f;
+
+        drawPinSectionHeader2x5(gl, surfaceY, rectCenterXcm, headerCenterZ);
+
+        /*
+         * 8 red LEDs below the header, centered horizontally.
+         */
+        float ledTotalWidth = PIN_SECTION_LED_COUNT * PIN_SECTION_LED_SIZE_CM
+                + (PIN_SECTION_LED_COUNT - 1) * PIN_SECTION_LED_GAP_CM;
+
+        float firstLedX = rectCenterXcm - ledTotalWidth / 2.0f + PIN_SECTION_LED_SIZE_CM / 2.0f;
+        float ledCenterZ = rectBottom
+                + PIN_SECTION_LED_BOTTOM_OFFSET_CM
+                + PIN_SECTION_LED_SIZE_CM / 2.0f;
+
+        for (int i = 0; i < PIN_SECTION_LED_COUNT; i++) {
+            float ledCenterX = firstLedX + i * (PIN_SECTION_LED_SIZE_CM + PIN_SECTION_LED_GAP_CM);
+
+            drawPinSectionLed(gl,
+                    surfaceY,
+                    ledCenterX,
+                    ledCenterZ);
+        }
+    }
+
+    private void drawPinSectionHeader2x5(GL2 gl,
+                                         float surfaceY,
+                                         float centerXcm,
+                                         float centerZcm) {
+        float colPitch = PIN_SECTION_HEADER_BASE_SIZE_CM + PIN_SECTION_HEADER_PIN_GAP_CM;
+        float rowPitch = PIN_SECTION_HEADER_BASE_SIZE_CM + PIN_SECTION_HEADER_PIN_GAP_CM;
+
+        float totalWidth = PIN_SECTION_HEADER_COLS * PIN_SECTION_HEADER_BASE_SIZE_CM
+                + (PIN_SECTION_HEADER_COLS - 1) * PIN_SECTION_HEADER_PIN_GAP_CM;
+
+        float totalDepth = PIN_SECTION_HEADER_ROWS * PIN_SECTION_HEADER_BASE_SIZE_CM
+                + (PIN_SECTION_HEADER_ROWS - 1) * PIN_SECTION_HEADER_PIN_GAP_CM;
+
+        float firstColX = centerXcm - totalWidth / 2.0f + PIN_SECTION_HEADER_BASE_SIZE_CM / 2.0f;
+        float firstRowZ = centerZcm + totalDepth / 2.0f - PIN_SECTION_HEADER_BASE_SIZE_CM / 2.0f;
+
+        for (int row = 0; row < PIN_SECTION_HEADER_ROWS; row++) {
+            float z = firstRowZ - row * rowPitch;
+
+            for (int col = 0; col < PIN_SECTION_HEADER_COLS; col++) {
+                float x = firstColX + col * colPitch;
+
+                drawSceneCuboid(gl,
+                        surfaceY,
+                        x,
+                        PIN_SECTION_HEADER_BASE_HEIGHT_CM / 2.0f,
+                        z,
+                        PIN_SECTION_HEADER_BASE_SIZE_CM,
+                        PIN_SECTION_HEADER_BASE_HEIGHT_CM,
+                        PIN_SECTION_HEADER_BASE_SIZE_CM,
+                        0.14f, 0.14f, 0.16f);
+
+                drawSceneCuboid(gl,
+                        surfaceY,
+                        x,
+                        PIN_SECTION_HEADER_BASE_HEIGHT_CM + PIN_SECTION_HEADER_PIN_HEIGHT_CM / 2.0f,
+                        z,
+                        PIN_SECTION_HEADER_PIN_SIZE_CM,
+                        PIN_SECTION_HEADER_PIN_HEIGHT_CM,
+                        PIN_SECTION_HEADER_PIN_SIZE_CM,
+                        0.75f, 0.75f, 0.78f);
+            }
+        }
+    }
+
+    private void drawPinSectionLed(GL2 gl,
+                                   float surfaceY,
+                                   float centerXcm,
+                                   float centerZcm) {
+        drawSceneCuboid(gl,
+                surfaceY,
+                centerXcm,
+                PIN_SECTION_LED_HEIGHT_CM / 2.0f,
+                centerZcm,
+                PIN_SECTION_LED_SIZE_CM,
+                PIN_SECTION_LED_HEIGHT_CM,
+                PIN_SECTION_LED_SIZE_CM,
+                0.90f, 0.03f, 0.03f);
+    }
+
+    private void drawButtonSection(GL2 gl, float surfaceY) {
+        float yellowLeft = -YELLOW_PERIMETER_WIDTH_CM / 2.0f;
+        float yellowBottom = -YELLOW_PERIMETER_DEPTH_CM / 2.0f;
+
+        /*
+         * Use the old lower-left area as the placement zone.
+         */
+        float areaLeft = yellowLeft + OFFSET_2MM_CM;
+        float areaBottom = yellowBottom + OFFSET_2MM_CM;
+
+        /*
+         * Total depth of 4 strips + 3 gaps.
+         */
+        float totalDepth = BUTTON_STRIP_COUNT * BUTTON_STRIP_DEPTH_CM
+                + (BUTTON_STRIP_COUNT - 1) * BUTTON_STRIP_GAP_CM;
+
+        /*
+         * Center the 4 strips vertically inside the old 8.4 cm zone.
+         */
+        float startBottom = areaBottom + (BUTTON_RECT_DEPTH_CM - totalDepth) / 2.0f;
+        float stripCenterX = areaLeft + BUTTON_STRIP_WIDTH_CM / 2.0f;
+
+        for (int i = 0; i < BUTTON_STRIP_COUNT; i++) {
+            float stripBottom = startBottom + i * (BUTTON_STRIP_DEPTH_CM + BUTTON_STRIP_GAP_CM);
+            float stripCenterZ = stripBottom + BUTTON_STRIP_DEPTH_CM / 2.0f;
+
+            drawSingleButtonStrip(gl, surfaceY, stripCenterX, stripCenterZ);
+        }
+    }
+
+    private void drawSingleButtonStrip(GL2 gl,
+                                       float surfaceY,
+                                       float stripCenterXcm,
+                                       float stripCenterZcm) {
+        float stripLeft = stripCenterXcm - BUTTON_STRIP_WIDTH_CM / 2.0f;
+        float stripRight = stripCenterXcm + BUTTON_STRIP_WIDTH_CM / 2.0f;
+        float stripBottom = stripCenterZcm - BUTTON_STRIP_DEPTH_CM / 2.0f;
+
+        /*
+         * IMPORTANT:
+         * The strip is NOT a white filled box.
+         * It is only a thin white rounded outline drawn on the black board surface.
+         */
+        boolean lightingWasEnabled = gl.glIsEnabled(GL2.GL_LIGHTING);
+
+        gl.glDisable(GL2.GL_LIGHTING);
+        gl.glColor3f(1.0f, 1.0f, 1.0f);
+        gl.glLineWidth(1.4f);
+
+        drawRoundedLine(gl,
+                stripCenterXcm,
+                stripCenterZcm,
+                BUTTON_STRIP_WIDTH_CM,
+                BUTTON_STRIP_DEPTH_CM,
+                cm(BUTTON_STRIP_RADIUS_CM),
+                surfaceY + LINE_Y_OFFSET + 0.002f);
+
+        gl.glLineWidth(1.0f);
+
+        if (lightingWasEnabled) {
+            gl.glEnable(GL2.GL_LIGHTING);
+        }
+
+        /*
+         * Button row.
+         */
+        float buttonCenterZ = stripBottom
+                + STRIP_BUTTON_ROW_BOTTOM_OFFSET_CM
+                + STRIP_BUTTON_SIZE_CM / 2.0f;
+
+        /*
+         * Red LEDs above buttons.
+         */
+        float ledCenterZ = stripBottom
+                + BUTTON_STRIP_DEPTH_CM
+                - STRIP_LED_ROW_TOP_OFFSET_CM
+                - STRIP_LED_SIZE_CM / 2.0f;
+
+        float rightmostButtonCenterX = stripRight
+                - STRIP_BUTTON_RIGHT_OFFSET_CM
+                - STRIP_BUTTON_SIZE_CM / 2.0f;
+
+        float leftmostButtonCenterX = rightmostButtonCenterX
+                - (STRIP_BUTTON_COUNT - 1) * (STRIP_BUTTON_SIZE_CM + STRIP_BUTTON_GAP_CM);
+
+        for (int i = 0; i < STRIP_BUTTON_COUNT; i++) {
+            float buttonCenterX = rightmostButtonCenterX
+                    - i * (STRIP_BUTTON_SIZE_CM + STRIP_BUTTON_GAP_CM);
+
+            drawBoardButton(gl, surfaceY, buttonCenterX, buttonCenterZ);
+            drawBoardLed(gl, surfaceY, buttonCenterX, ledCenterZ);
+        }
+
+        /*
+         * Black rectangular box to the left of the buttons.
+         * Aligned with the bottom line of the buttons.
+         */
+        float leftmostButtonLeft = leftmostButtonCenterX - STRIP_BUTTON_SIZE_CM / 2.0f;
+        float smallBoxRight = leftmostButtonLeft - STRIP_SMALL_BOX_GAP_FROM_LEFT_BUTTON_CM;
+        float smallBoxCenterX = smallBoxRight - STRIP_SMALL_BOX_WIDTH_CM / 2.0f;
+
+        float buttonBottom = buttonCenterZ - STRIP_BUTTON_SIZE_CM / 2.0f;
+        float smallBoxCenterZ = buttonBottom + STRIP_SMALL_BOX_DEPTH_CM / 2.0f;
+
+        drawBlackRectangleBox(gl,
+                surfaceY,
+                smallBoxCenterX,
+                smallBoxCenterZ);
+
+        /*
+         * 2x5 vertical pin header on the far left.
+         */
+        float smallBoxLeft = smallBoxCenterX - STRIP_SMALL_BOX_WIDTH_CM / 2.0f;
+        float headerAreaCenterX = (stripLeft + smallBoxLeft) / 2.0f;
+
+        drawVerticalHeader2x5(gl, surfaceY, headerAreaCenterX, stripCenterZcm);
+    }
+
+    private void drawBoardButton(GL2 gl,
+                                 float surfaceY,
+                                 float centerXcm,
+                                 float centerZcm) {
+        /*
+         * Silver square button directly on the black board surface.
+         */
+        drawSceneCuboid(gl,
+                surfaceY,
+                centerXcm,
+                STRIP_BUTTON_HEIGHT_CM / 2.0f,
+                centerZcm,
+                STRIP_BUTTON_SIZE_CM,
+                STRIP_BUTTON_HEIGHT_CM,
+                STRIP_BUTTON_SIZE_CM,
+                0.72f, 0.72f, 0.76f);
+
+        /*
+         * Round-ish silver cap on top.
+         */
+        gl.glPushMatrix();
+        gl.glTranslatef(sceneX(centerXcm),
+                surfaceY + cm(STRIP_BUTTON_HEIGHT_CM
+                        + STRIP_BUTTON_CAP_HEIGHT_CM / 2.0f),
+                cm(centerZcm));
+
+        gl.glColor3f(0.88f, 0.88f, 0.90f);
+
+        Shape.roundedCuboid(gl,
+                cm(STRIP_BUTTON_CAP_SIZE_CM),
+                cm(STRIP_BUTTON_CAP_HEIGHT_CM),
+                cm(STRIP_BUTTON_CAP_SIZE_CM),
+                cm(STRIP_BUTTON_CAP_SIZE_CM / 2.0f),
+                16);
+
+        gl.glPopMatrix();
+    }
+
+    private void drawBoardLed(GL2 gl,
+                              float surfaceY,
+                              float centerXcm,
+                              float centerZcm) {
+        /*
+         * Red LED directly on board surface, above the button.
+         */
+        drawSceneCuboid(gl,
+                surfaceY,
+                centerXcm,
+                STRIP_LED_HEIGHT_CM / 2.0f,
+                centerZcm,
+                STRIP_LED_SIZE_CM,
+                STRIP_LED_HEIGHT_CM,
+                STRIP_LED_SIZE_CM,
+                0.90f, 0.03f, 0.03f);
+    }
+
+    private void drawBlackRectangleBox(GL2 gl,
+                                       float surfaceY,
+                                       float centerXcm,
+                                       float centerZcm) {
+        /*
+         * Black rectangular box.
+         * Slightly different black shade so it is visible on the board.
+         */
+        drawSceneCuboid(gl,
+                surfaceY,
+                centerXcm,
+                STRIP_SMALL_BOX_HEIGHT_CM / 2.0f,
+                centerZcm,
+                STRIP_SMALL_BOX_WIDTH_CM,
+                STRIP_SMALL_BOX_HEIGHT_CM,
+                STRIP_SMALL_BOX_DEPTH_CM,
+                0.015f, 0.015f, 0.018f);
+
+        /*
+         * Thin grey outline so black box is visible on black board.
+         */
+        boolean lightingWasEnabled = gl.glIsEnabled(GL2.GL_LIGHTING);
+
+        gl.glDisable(GL2.GL_LIGHTING);
+        gl.glColor3f(0.35f, 0.35f, 0.38f);
+        gl.glLineWidth(1.0f);
+
+        gl.glPushMatrix();
+        gl.glTranslatef(sceneX(centerXcm),
+                surfaceY + cm(STRIP_SMALL_BOX_HEIGHT_CM / 2.0f),
+                cm(centerZcm));
+
+        Shape.wireCuboid(gl,
+                cm(STRIP_SMALL_BOX_WIDTH_CM),
+                cm(STRIP_SMALL_BOX_HEIGHT_CM + 0.01f),
+                cm(STRIP_SMALL_BOX_DEPTH_CM));
+
+        gl.glPopMatrix();
+
+        if (lightingWasEnabled) {
+            gl.glEnable(GL2.GL_LIGHTING);
+        }
+    }
+
+    private void drawVerticalHeader2x5(GL2 gl,
+                                       float surfaceY,
+                                       float centerXcm,
+                                       float centerZcm) {
+        float colPitch = STRIP_HEADER_BASE_SIZE_CM + STRIP_HEADER_PIN_GAP_CM;
+        float rowPitch = STRIP_HEADER_BASE_SIZE_CM + STRIP_HEADER_PIN_GAP_CM;
+
+        float totalWidth = STRIP_HEADER_COLS * STRIP_HEADER_BASE_SIZE_CM
+                + (STRIP_HEADER_COLS - 1) * STRIP_HEADER_PIN_GAP_CM;
+
+        float totalDepth = STRIP_HEADER_ROWS * STRIP_HEADER_BASE_SIZE_CM
+                + (STRIP_HEADER_ROWS - 1) * STRIP_HEADER_PIN_GAP_CM;
+
+        float firstColX = centerXcm - totalWidth / 2.0f + STRIP_HEADER_BASE_SIZE_CM / 2.0f;
+        float firstRowZ = centerZcm + totalDepth / 2.0f - STRIP_HEADER_BASE_SIZE_CM / 2.0f;
+
+        for (int row = 0; row < STRIP_HEADER_ROWS; row++) {
+            float z = firstRowZ - row * rowPitch;
+
+            for (int col = 0; col < STRIP_HEADER_COLS; col++) {
+                float x = firstColX + col * colPitch;
+
+                /*
+                 * Dark square base.
+                 */
+                drawSceneCuboid(gl,
+                        surfaceY,
+                        x,
+                        STRIP_HEADER_BASE_HEIGHT_CM / 2.0f,
+                        z,
+                        STRIP_HEADER_BASE_SIZE_CM,
+                        STRIP_HEADER_BASE_HEIGHT_CM,
+                        STRIP_HEADER_BASE_SIZE_CM,
+                        0.14f, 0.14f, 0.16f);
+
+                /*
+                 * Silver pin on top.
+                 */
+                drawSceneCuboid(gl,
+                        surfaceY,
+                        x,
+                        STRIP_HEADER_BASE_HEIGHT_CM + STRIP_HEADER_PIN_HEIGHT_CM / 2.0f,
+                        z,
+                        STRIP_HEADER_PIN_SIZE_CM,
+                        STRIP_HEADER_PIN_HEIGHT_CM,
+                        STRIP_HEADER_PIN_SIZE_CM,
+                        0.75f, 0.75f, 0.78f);
+            }
+        }
+    }
+
+    private void drawSceneCuboid(GL2 gl,
+                                 float surfaceY,
+                                 float centerXcm,
+                                 float centerYcm,
+                                 float centerZcm,
+                                 float widthCm,
+                                 float heightCm,
+                                 float depthCm,
+                                 float r,
+                                 float g,
+                                 float b) {
+        gl.glPushMatrix();
+
+        /*
+         * centerYcm is relative to the board surface.
+         */
+        gl.glTranslatef(sceneX(centerXcm),
+                surfaceY + cm(centerYcm),
+                cm(centerZcm));
+
+        gl.glColor3f(r, g, b);
+        Shape.cuboid(gl,
+                cm(widthCm),
+                cm(heightCm),
+                cm(depthCm));
+        gl.glPopMatrix();
     }
 
     private void drawTargetHints(GL2 gl, float surfaceY) {
@@ -1374,21 +1910,10 @@ public class BoardBox {
         gl.glColor3f(1.0f, 1.0f, 1.0f);
         gl.glLineWidth(2.0f);
 
-        drawRoundedLine(gl,
-                buttonCenterX,
-                buttonCenterZ,
-                BUTTON_RECT_WIDTH_CM,
-                BUTTON_RECT_DEPTH_CM,
-                radius,
-                lineY);
-
-        drawRoundedLine(gl,
-                pinCenterX,
-                pinCenterZ,
-                PIN_RECT_WIDTH_CM,
-                PIN_RECT_DEPTH_CM,
-                radius,
-                lineY);
+        /*
+         * The old lower-right pin-header rectangle is intentionally NOT drawn anymore.
+         * It is now represented by 16 small rounded white outlines.
+         */
 
         /*
          * MCU socket:
