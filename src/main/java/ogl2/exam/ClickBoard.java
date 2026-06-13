@@ -147,11 +147,12 @@ public class ClickBoard {
                 LEG_WIDTH_CM);
 
         /*
-         * 3 mm long rectangle at the bottom.
+         * 3 mm long rectangle at the TOP of the leg,
+         * directly under the Click board.
          */
         drawLocalCuboid(gl,
                 xCm,
-                LEG_BOTTOM_Y_CM + LEG_END_HEIGHT_CM / 2.0f,
+                LEG_BOTTOM_Y_CM + LEG_HEIGHT_CM - LEG_END_HEIGHT_CM / 2.0f,
                 zCm,
                 LEG_END_WIDTH_CM,
                 LEG_END_HEIGHT_CM,

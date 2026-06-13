@@ -53,6 +53,20 @@ public class BoardBox {
     private final ClickBoardType[] placedClickBoards = new ClickBoardType[5];
     private int activeMikrobusIndex = 0;
 
+    private int activePlacementIndex = 0;
+
+    /*
+     * 0 = Click board
+     * 1 = MCU card
+     * 2 = TFT display
+     * 3 = LCD display
+     */
+    private int selectedPlacementType = 0;
+
+    private boolean mcuCardPlaced = false;
+    private boolean tftDisplayPlaced = false;
+    private boolean lcdDisplayPlaced = false;
+
     /*
      * Top-left small boxes.
      */
@@ -220,10 +234,156 @@ public class BoardBox {
         drawTopLeftBoxes(gl, topY);
         drawMikrobusRow(gl, topY);
         drawPlacedClickBoards(gl, topY);
-        drawSelectedClickBoardPreview(gl, topY);
+        drawSelectedObjectPreview(gl, topY);
         drawTftHeaderConnector(gl, topY);
         drawLcdHeaderConnector(gl, topY);
         drawMcuCardConnectors(gl, topY);
+        drawPlacedLargeModules(gl, topY);
+        drawActivePlacementSelector(gl, topY + LINE_Y_OFFSET + 0.003f);
+    }
+
+    private void drawActivePlacementSelector(GL2 gl, float lineY) {
+        boolean lightingWasEnabled = gl.glIsEnabled(GL2.GL_LIGHTING);
+
+        gl.glDisable(GL2.GL_LIGHTING);
+        gl.glDisable(GL2.GL_LINE_STIPPLE);
+
+        gl.glColor3f(0.0f, 1.0f, 0.35f);
+        gl.glLineWidth(2.5f);
+
+        if (activePlacementIndex < 5) {
+            drawRoundedLine(gl,
+                    getMikrobusCenterX(activePlacementIndex),
+                    getMikrobusGuideCenterZ(),
+                    MIKROBUS_WIDTH_CM,
+                    getMikrobusGuideDepth(),
+                    cm(CORNER_RADIUS_CM),
+                    lineY);
+        } else if (activePlacementIndex == 5) {
+            drawRoundedLine(gl,
+                    0.0f,
+                    getMcuCenterZ(),
+                    MCU_SOCKET_SIZE_CM,
+                    MCU_SOCKET_SIZE_CM,
+                    cm(CORNER_RADIUS_CM),
+                    lineY);
+        } else if (activePlacementIndex == 6) {
+            drawRoundedLine(gl,
+                    getTftCenterX(),
+                    getTftCenterZ(),
+                    TFT_WIDTH_CM,
+                    TFT_DEPTH_CM,
+                    cm(CORNER_RADIUS_CM),
+                    lineY);
+        } else if (activePlacementIndex == 7) {
+            drawRoundedLine(gl,
+                    getLcdCenterX(),
+                    getLcdCenterZ(),
+                    LCD_WIDTH_CM,
+                    LCD_DEPTH_CM,
+                    cm(CORNER_RADIUS_CM),
+                    lineY);
+        }
+
+        gl.glLineWidth(1.0f);
+
+        if (lightingWasEnabled) {
+            gl.glEnable(GL2.GL_LIGHTING);
+        }
+    }
+
+    private float getMikrobusGuideCenterZ() {
+        float yellowTop = YELLOW_PERIMETER_DEPTH_CM / 2.0f;
+
+        float boxTop = yellowTop - OFFSET_1MM_CM;
+        float boxBottom = boxTop - SMALL_BOX_DEPTH_CM;
+
+        float guideTop = yellowTop - MIKROBUS_GUIDE_TOP_OFFSET_CM;
+
+        return (guideTop + boxBottom) / 2.0f;
+    }
+
+    private float getMcuCenterZ() {
+        float yellowBottom = -YELLOW_PERIMETER_DEPTH_CM / 2.0f;
+
+        return yellowBottom + MCU_FROM_YELLOW_BOTTOM_CM + MCU_SOCKET_SIZE_CM / 2.0f;
+    }
+
+    private float getTftCenterX() {
+        float yellowLeft = -YELLOW_PERIMETER_WIDTH_CM / 2.0f;
+
+        float tftLeft = yellowLeft + TFT_LEFT_DISTANCE_FROM_YELLOW_CM;
+
+        return tftLeft + TFT_WIDTH_CM / 2.0f;
+    }
+
+    private float getTftCenterZ() {
+        float yellowBottom = -YELLOW_PERIMETER_DEPTH_CM / 2.0f;
+
+        float buttonCenterZ = yellowBottom + OFFSET_2MM_CM + BUTTON_RECT_DEPTH_CM / 2.0f;
+        float lowerRectTop = buttonCenterZ + BUTTON_RECT_DEPTH_CM / 2.0f;
+
+        float tftBottom = lowerRectTop + OFFSET_1MM_CM;
+
+        return tftBottom + TFT_DEPTH_CM / 2.0f;
+    }
+
+    private float getLcdCenterX() {
+        float yellowRight = YELLOW_PERIMETER_WIDTH_CM / 2.0f;
+
+        float lcdRight = yellowRight - OFFSET_2MM_CM;
+
+        return lcdRight - LCD_WIDTH_CM / 2.0f;
+    }
+
+    private float getLcdCenterZ() {
+        float tftTop = getTftCenterZ() + TFT_DEPTH_CM / 2.0f;
+
+        return tftTop - LCD_DEPTH_CM / 2.0f;
+    }
+
+    private void drawPlacedLargeModules(GL2 gl, float surfaceY) {
+        if (mcuCardPlaced) {
+            gl.glPushMatrix();
+            gl.glTranslatef(sceneX(0.0f), surfaceY, cm(getMcuCenterZ()));
+
+            new McuCard().draw(gl);
+
+            gl.glPopMatrix();
+        }
+
+        if (tftDisplayPlaced) {
+            gl.glPushMatrix();
+            gl.glTranslatef(sceneX(getTftCenterX()), surfaceY, cm(getTftCenterZ()));
+
+            new TftDisplay().draw(gl);
+
+            gl.glPopMatrix();
+        }
+
+        if (lcdDisplayPlaced) {
+            gl.glPushMatrix();
+            gl.glTranslatef(sceneX(getLcdCenterX()), surfaceY, cm(getLcdCenterZ()));
+
+            new LcdDisplay().draw(gl);
+
+            gl.glPopMatrix();
+        }
+    }
+
+    public void selectMcuCard() {
+        selectedPlacementType = 1;
+        System.out.println("Selected: MCU Card");
+    }
+
+    public void selectTftDisplay() {
+        selectedPlacementType = 2;
+        System.out.println("Selected: TFT Display");
+    }
+
+    public void selectLcdDisplay() {
+        selectedPlacementType = 3;
+        System.out.println("Selected: LCD Display");
     }
 
     private float getMikrobusGuideDepth() {
@@ -237,10 +397,10 @@ public class BoardBox {
         return guideTop - boxBottom;
     }
 
-    private void drawSelectedClickBoardPreview(GL2 gl, float surfaceY) {
+    private void drawSelectedObjectPreview(GL2 gl, float surfaceY) {
         /*
-         * Duplicate preview of the currently selected Click board.
-         * Placed next to the board box.
+         * Preview of the currently selected object.
+         * It appears next to the board box.
          */
         float previewCenterX = -FULL_WIDTH_CM / 2.0f - 3.5f;
         float previewCenterZ = 0.0f;
@@ -248,12 +408,53 @@ public class BoardBox {
         gl.glPushMatrix();
         gl.glTranslatef(sceneX(previewCenterX), surfaceY, cm(previewCenterZ));
 
-        ClickBoard preview = new ClickBoard(selectedClickBoardType);
-        preview.draw(gl,
-                MIKROBUS_WIDTH_CM,
-                MIKROBUS_DEPTH_CM,
-                MIKROBUS_WALL_WIDTH_CM,
-                getMikrobusGuideDepth());
+        /*
+         * 0 = Click board
+         * 1 = MCU card
+         * 2 = TFT display
+         * 3 = LCD display
+         */
+        if (selectedPlacementType == 0) {
+            ClickBoard preview = new ClickBoard(selectedClickBoardType);
+
+            preview.draw(gl,
+                    MIKROBUS_WIDTH_CM,
+                    MIKROBUS_DEPTH_CM,
+                    MIKROBUS_WALL_WIDTH_CM,
+                    getMikrobusGuideDepth());
+        } else if (selectedPlacementType == 1) {
+            /*
+             * MCU Card preview.
+             * Slightly scaled down so it fits nicely next to the board.
+             */
+            gl.glPushMatrix();
+            gl.glScalef(0.75f, 0.75f, 0.75f);
+
+            new McuCard().draw(gl);
+
+            gl.glPopMatrix();
+        } else if (selectedPlacementType == 2) {
+            /*
+             * TFT preview.
+             * TFT is large, so preview is scaled down.
+             */
+            gl.glPushMatrix();
+            gl.glScalef(0.45f, 0.45f, 0.45f);
+
+            new TftDisplay().draw(gl);
+
+            gl.glPopMatrix();
+        } else if (selectedPlacementType == 3) {
+            /*
+             * LCD preview.
+             */
+            gl.glPushMatrix();
+            gl.glScalef(0.60f, 0.60f, 0.60f);
+
+            new LcdDisplay().draw(gl);
+
+            gl.glPopMatrix();
+        }
 
         gl.glPopMatrix();
     }
@@ -339,44 +540,132 @@ public class BoardBox {
 
         if (index >= 0 && index < boards.length) {
             selectedClickBoardType = boards[index];
+
+            /*
+             * Important:
+             * 0 means the selected object is a Click board.
+             * Without this, preview stays stuck on MCU/TFT/LCD.
+             */
+            selectedPlacementType = 0;
+
             System.out.println("Selected Click board: " + selectedClickBoardType.getDisplayName());
         }
     }
 
     public void nextMikrobus() {
-        activeMikrobusIndex++;
+        activePlacementIndex++;
 
-        if (activeMikrobusIndex >= 5) {
-            activeMikrobusIndex = 0;
+        if (activePlacementIndex >= 8) {
+            activePlacementIndex = 0;
         }
 
-        System.out.println("Active mikroBUS: " + (activeMikrobusIndex + 1));
+        syncActiveMikrobusIndex();
+        printActivePlacement();
     }
 
     public void previousMikrobus() {
-        activeMikrobusIndex--;
+        activePlacementIndex--;
 
-        if (activeMikrobusIndex < 0) {
-            activeMikrobusIndex = 4;
+        if (activePlacementIndex < 0) {
+            activePlacementIndex = 7;
         }
 
-        System.out.println("Active mikroBUS: " + (activeMikrobusIndex + 1));
+        syncActiveMikrobusIndex();
+        printActivePlacement();
+    }
+
+    private void syncActiveMikrobusIndex() {
+        if (activePlacementIndex >= 0 && activePlacementIndex < 5) {
+            activeMikrobusIndex = activePlacementIndex;
+        }
+    }
+
+    private void printActivePlacement() {
+        if (activePlacementIndex < 5) {
+            System.out.println("Active placement: mikroBUS " + (activePlacementIndex + 1));
+        } else if (activePlacementIndex == 5) {
+            System.out.println("Active placement: MCU Card rectangle");
+        } else if (activePlacementIndex == 6) {
+            System.out.println("Active placement: TFT rectangle");
+        } else if (activePlacementIndex == 7) {
+            System.out.println("Active placement: LCD rectangle");
+        }
     }
 
     public void placeSelectedClickBoard() {
-        placedClickBoards[activeMikrobusIndex] = selectedClickBoardType;
+        if (activePlacementIndex < 5) {
+            if (selectedPlacementType == 0) {
+                placedClickBoards[activePlacementIndex] = selectedClickBoardType;
 
-        System.out.println("Placed "
-                + selectedClickBoardType.getDisplayName()
-                + " on mikroBUS "
-                + (activeMikrobusIndex + 1));
+                System.out.println("Placed "
+                        + selectedClickBoardType.getDisplayName()
+                        + " on mikroBUS "
+                        + (activePlacementIndex + 1));
+            } else {
+                System.out.println("Selected object cannot be placed on mikroBUS.");
+            }
+
+            return;
+        }
+
+        if (activePlacementIndex == 5) {
+            if (selectedPlacementType == 1) {
+                mcuCardPlaced = true;
+                System.out.println("Placed MCU card.");
+            } else {
+                System.out.println("Only MCU card can be placed here.");
+            }
+
+            return;
+        }
+
+        if (activePlacementIndex == 6) {
+            if (selectedPlacementType == 2) {
+                tftDisplayPlaced = true;
+                System.out.println("Placed TFT display.");
+            } else {
+                System.out.println("Only TFT display can be placed here.");
+            }
+
+            return;
+        }
+
+        if (activePlacementIndex == 7) {
+            if (selectedPlacementType == 3) {
+                lcdDisplayPlaced = true;
+                System.out.println("Placed LCD display.");
+            } else {
+                System.out.println("Only LCD display can be placed here.");
+            }
+        }
     }
 
     public void removeClickBoardFromActiveMikrobus() {
-        placedClickBoards[activeMikrobusIndex] = null;
+        if (activePlacementIndex < 5) {
+            placedClickBoards[activePlacementIndex] = null;
 
-        System.out.println("Removed Click board from mikroBUS "
-                + (activeMikrobusIndex + 1));
+            System.out.println("Removed Click board from mikroBUS "
+                    + (activePlacementIndex + 1));
+
+            return;
+        }
+
+        if (activePlacementIndex == 5) {
+            mcuCardPlaced = false;
+            System.out.println("Removed MCU card.");
+            return;
+        }
+
+        if (activePlacementIndex == 6) {
+            tftDisplayPlaced = false;
+            System.out.println("Removed TFT display.");
+            return;
+        }
+
+        if (activePlacementIndex == 7) {
+            lcdDisplayPlaced = false;
+            System.out.println("Removed LCD display.");
+        }
     }
 
     private void drawMcuCardConnectors(GL2 gl, float surfaceY) {

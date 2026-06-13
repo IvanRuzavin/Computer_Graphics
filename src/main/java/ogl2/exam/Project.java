@@ -202,7 +202,7 @@ public class Project implements GLEventListener, KeyListener {
                 System.exit(0);
                 break;
 
-            // Click board move.
+            // Components move.
             case KeyEvent.VK_1:
                 boardBox.selectClickBoard(0);
                 break;
@@ -237,6 +237,18 @@ public class Project implements GLEventListener, KeyListener {
 
             case KeyEvent.VK_R:
                 boardBox.removeClickBoardFromActiveMikrobus();
+                break;
+
+            case KeyEvent.VK_6:
+                boardBox.selectMcuCard();
+                break;
+
+            case KeyEvent.VK_7:
+                boardBox.selectTftDisplay();
+                break;
+
+            case KeyEvent.VK_8:
+                boardBox.selectLcdDisplay();
                 break;
 
             default:
