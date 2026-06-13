@@ -48,6 +48,17 @@ public class LcdDisplay {
                 0.04f,
                 LCD_DEPTH_CM * 0.50f);
 
+        TextUtil.drawTopText(gl,
+                "LCD",
+                0.0f,
+                SOCKET_HEIGHT_CM + LCD_HEIGHT_CM + 0.05f,
+                0.0f,
+                0.0f,
+                0.00075f,
+                1.0f,
+                1.0f,
+                1.0f);
+
         /*
          * Bottom socket that matches LCD board pins.
          */

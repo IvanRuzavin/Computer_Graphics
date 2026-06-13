@@ -50,6 +50,17 @@ public class TftDisplay {
                 0.04f,
                 TFT_DEPTH_CM * 0.72f);
 
+        TextUtil.drawTopText(gl,
+                "TFT Display",
+                0.0f,
+                SOCKET_HEIGHT_CM + TFT_HEIGHT_CM + 0.05f,
+                0.0f,
+                0.0f,
+                0.00055f,
+                1.0f,
+                1.0f,
+                1.0f);
+
         /*
          * Bottom socket matching the TFT connector on the board.
          * X is mirrored inside the component so it matches the board orientation.

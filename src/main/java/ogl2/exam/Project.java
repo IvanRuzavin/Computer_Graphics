@@ -39,7 +39,7 @@ public class Project implements GLEventListener, KeyListener {
     private boolean specularEnabled = true;
 
     private float boardRotationX = 0.0f;
-    private float boardRotationY = 0.0f;
+    private float boardRotationY = 180.0f;
     private float boardRotationZ = 0.0f;
 
     public static void main(String[] args) {
