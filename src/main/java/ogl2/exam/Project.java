@@ -173,6 +173,7 @@ public class Project implements GLEventListener, KeyListener {
     @Override
     public void keyPressed(KeyEvent e) {
         switch (e.getKeyCode()) {
+            // Camera Rotation.
             case KeyEvent.VK_LEFT:
                 boardRotationY -= 5.0f;
                 break;
@@ -200,6 +201,44 @@ public class Project implements GLEventListener, KeyListener {
             case KeyEvent.VK_ESCAPE:
                 System.exit(0);
                 break;
+
+            // Click board move.
+            case KeyEvent.VK_1:
+                boardBox.selectClickBoard(0);
+                break;
+
+            case KeyEvent.VK_2:
+                boardBox.selectClickBoard(1);
+                break;
+
+            case KeyEvent.VK_3:
+                boardBox.selectClickBoard(2);
+                break;
+
+            case KeyEvent.VK_4:
+                boardBox.selectClickBoard(3);
+                break;
+
+            case KeyEvent.VK_5:
+                boardBox.selectClickBoard(4);
+                break;
+
+            case KeyEvent.VK_A:
+                boardBox.previousMikrobus();
+                break;
+
+            case KeyEvent.VK_D:
+                boardBox.nextMikrobus();
+                break;
+
+            case KeyEvent.VK_SPACE:
+                boardBox.placeSelectedClickBoard();
+                break;
+
+            case KeyEvent.VK_R:
+                boardBox.removeClickBoardFromActiveMikrobus();
+                break;
+
             default:
                 break;
         }

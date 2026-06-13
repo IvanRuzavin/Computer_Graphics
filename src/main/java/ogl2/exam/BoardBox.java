@@ -49,6 +49,10 @@ public class BoardBox {
     private static final float LCD_WIDTH_CM = 8.0f;
     private static final float LCD_DEPTH_CM = 3.6f;
 
+    private ClickBoardType selectedClickBoardType = ClickBoardType.WIFI_CLICK;
+    private final ClickBoardType[] placedClickBoards = new ClickBoardType[5];
+    private int activeMikrobusIndex = 0;
+
     /*
      * Top-left small boxes.
      */
@@ -215,9 +219,164 @@ public class BoardBox {
          */
         drawTopLeftBoxes(gl, topY);
         drawMikrobusRow(gl, topY);
+        drawPlacedClickBoards(gl, topY);
+        drawSelectedClickBoardPreview(gl, topY);
         drawTftHeaderConnector(gl, topY);
         drawLcdHeaderConnector(gl, topY);
         drawMcuCardConnectors(gl, topY);
+    }
+
+    private float getMikrobusGuideDepth() {
+        float yellowTop = YELLOW_PERIMETER_DEPTH_CM / 2.0f;
+
+        float boxTop = yellowTop - OFFSET_1MM_CM;
+        float boxBottom = boxTop - SMALL_BOX_DEPTH_CM;
+
+        float guideTop = yellowTop - MIKROBUS_GUIDE_TOP_OFFSET_CM;
+
+        return guideTop - boxBottom;
+    }
+
+    private void drawSelectedClickBoardPreview(GL2 gl, float surfaceY) {
+        /*
+         * Duplicate preview of the currently selected Click board.
+         * Placed next to the board box.
+         */
+        float previewCenterX = -FULL_WIDTH_CM / 2.0f - 3.5f;
+        float previewCenterZ = 0.0f;
+
+        gl.glPushMatrix();
+        gl.glTranslatef(sceneX(previewCenterX), surfaceY, cm(previewCenterZ));
+
+        ClickBoard preview = new ClickBoard(selectedClickBoardType);
+        preview.draw(gl,
+                MIKROBUS_WIDTH_CM,
+                MIKROBUS_DEPTH_CM,
+                MIKROBUS_WALL_WIDTH_CM,
+                getMikrobusGuideDepth());
+
+        gl.glPopMatrix();
+    }
+
+    private void drawPlacedClickBoards(GL2 gl, float surfaceY) {
+        for (int i = 0; i < 5; i++) {
+            ClickBoardType type = placedClickBoards[i];
+
+            if (type == null) {
+                continue;
+            }
+
+            float centerX = getMikrobusCenterX(i);
+            float centerZ = getMikrobusCenterZ();
+
+            gl.glPushMatrix();
+            gl.glTranslatef(sceneX(centerX), surfaceY, cm(centerZ));
+
+            ClickBoard clickBoard = new ClickBoard(type);
+            clickBoard.draw(gl,
+                    MIKROBUS_WIDTH_CM,
+                    MIKROBUS_DEPTH_CM,
+                    MIKROBUS_WALL_WIDTH_CM,
+                    getMikrobusGuideDepth());
+
+            gl.glPopMatrix();
+        }
+
+        drawActiveMikrobusSelector(gl, surfaceY + LINE_Y_OFFSET + 0.003f);
+    }
+
+    private void drawActiveMikrobusSelector(GL2 gl, float lineY) {
+        boolean lightingWasEnabled = gl.glIsEnabled(GL2.GL_LIGHTING);
+
+        gl.glDisable(GL2.GL_LIGHTING);
+        gl.glDisable(GL2.GL_LINE_STIPPLE);
+
+        gl.glColor3f(0.0f, 1.0f, 0.35f);
+        gl.glLineWidth(2.5f);
+
+        drawRoundedLine(gl,
+                getMikrobusCenterX(activeMikrobusIndex),
+                getMikrobusCenterZ(),
+                MIKROBUS_WIDTH_CM,
+                MIKROBUS_DEPTH_CM,
+                cm(CORNER_RADIUS_CM),
+                lineY);
+
+        gl.glLineWidth(1.0f);
+
+        if (lightingWasEnabled) {
+            gl.glEnable(GL2.GL_LIGHTING);
+        }
+    }
+
+    private float getMikrobusCenterX(int index) {
+        float yellowLeft = -YELLOW_PERIMETER_WIDTH_CM / 2.0f;
+
+        float box1Left = yellowLeft + OFFSET_3MM_CM;
+        float box2Left = box1Left + SMALL_BOX_WIDTH_CM + OFFSET_2MM_CM;
+        float box2Right = box2Left + SMALL_BOX_WIDTH_CM;
+
+        float firstMikroLeft = box2Right + MIKROBUS_START_OFFSET_CM;
+
+        float currentLeft = firstMikroLeft + index * (MIKROBUS_WIDTH_CM + MIKROBUS_GAP_CM);
+
+        return currentLeft + MIKROBUS_WIDTH_CM / 2.0f;
+    }
+
+    private float getMikrobusCenterZ() {
+        float yellowTop = YELLOW_PERIMETER_DEPTH_CM / 2.0f;
+
+        float boxTop = yellowTop - OFFSET_1MM_CM;
+        float boxBottom = boxTop - SMALL_BOX_DEPTH_CM;
+
+        float mikroBottom = boxBottom;
+
+        return mikroBottom + MIKROBUS_DEPTH_CM / 2.0f;
+    }
+
+    public void selectClickBoard(int index) {
+        ClickBoardType[] boards = ClickBoardType.values();
+
+        if (index >= 0 && index < boards.length) {
+            selectedClickBoardType = boards[index];
+            System.out.println("Selected Click board: " + selectedClickBoardType.getDisplayName());
+        }
+    }
+
+    public void nextMikrobus() {
+        activeMikrobusIndex++;
+
+        if (activeMikrobusIndex >= 5) {
+            activeMikrobusIndex = 0;
+        }
+
+        System.out.println("Active mikroBUS: " + (activeMikrobusIndex + 1));
+    }
+
+    public void previousMikrobus() {
+        activeMikrobusIndex--;
+
+        if (activeMikrobusIndex < 0) {
+            activeMikrobusIndex = 4;
+        }
+
+        System.out.println("Active mikroBUS: " + (activeMikrobusIndex + 1));
+    }
+
+    public void placeSelectedClickBoard() {
+        placedClickBoards[activeMikrobusIndex] = selectedClickBoardType;
+
+        System.out.println("Placed "
+                + selectedClickBoardType.getDisplayName()
+                + " on mikroBUS "
+                + (activeMikrobusIndex + 1));
+    }
+
+    public void removeClickBoardFromActiveMikrobus() {
+        placedClickBoards[activeMikrobusIndex] = null;
+
+        System.out.println("Removed Click board from mikroBUS "
+                + (activeMikrobusIndex + 1));
     }
 
     private void drawMcuCardConnectors(GL2 gl, float surfaceY) {
